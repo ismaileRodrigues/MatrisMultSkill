@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Matriz Multi Skill</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">▦</span><span>Multi Skill</span></div>
+      <nav><a class="nav-link active" id="matrixNav" href="#matriz">▤ <span>Matriz Multi Skill</span></a><button class="nav-link" id="lineNav" type="button">⇄ <span>Distribuição da linha</span></button></nav>
+      <div class="sidebar-foot"><span class="avatar">MS</span><div><strong>Modo local</strong><small>Dados salvos neste navegador</small></div></div>
+    </aside>
+    <main class="content">
+      <header class="topbar"><div><p class="eyebrow">◈ GESTÃO OPERACIONAL</p><h1>Matriz Multi Skill</h1><p class="subtitle">Visualize a cobertura da equipe, atualize habilitações e acompanhe as lacunas de capacitação.</p></div><div class="actions"><button class="btn secondary" id="exportBtn">⇩ Exportar JSON</button><button class="btn secondary" id="importBtn">⇧ Importar JSON</button><input id="importFile" type="file" accept="application/json,.json" hidden><button class="btn secondary" id="addEmployeeBtn">＋ Funcionário</button><button class="btn primary" id="addOperationBtn">＋ Operação</button></div></header>
+      <section class="stats" id="stats"></section>
+      <section class="panel matrix-panel" id="matriz">
+        <div class="panel-head"><div><h2>Mapa de habilitações</h2><p>Clique em uma célula para escolher o nível. As alterações são salvas automaticamente.</p></div><label class="search"><span>⌕</span><input id="searchInput" placeholder="Buscar funcionário..."></label></div>
+        <div class="table-wrap"><table id="matrixTable"></table></div>
+        <div class="legend" id="legend"></div>
+      </section>
+      <section class="summary-grid"><div class="panel"><div class="summary-title">♙ Cobertura por funcionário</div><div id="employeeSummary"></div></div><div class="panel"><div class="summary-title">▦ Cobertura por operação</div><div id="operationSummary"></div></div></section>
+      <section class="panel line-screen hidden" id="lineScreen"><div class="panel-head"><div><p class="eyebrow">ESCALA DA LINHA</p><h2>Distribuição da equipe</h2><p>Veja quem está em cada step e programe a rotação dos montadores.</p></div><div class="line-controls"><label>Linha de montagem<select id="lineSelect"></select></label><button class="btn secondary" id="addLineBtn">＋ Nova linha</button><button class="btn secondary" id="editLineBtn">✎ Renomear</button><button class="btn secondary" id="deleteLineBtn">× Remover</button><label>Data da rotação<input id="rotationDate" type="date"></label><label>Frequência<select id="rotationFrequency"><option value="daily">Diária</option><option value="weekly">Semanal</option></select></label><label>Modo<select id="rotationMode"><option value="manual">Manual</option><option value="automatic">Automática</option></select></label><button class="btn primary" id="runRotationBtn">Rodar rotação agora</button></div></div><div class="rotation-banner" id="rotationBanner"></div><div class="line-board" id="lineBoard"></div><section class="route-panel"><div class="route-panel-head"><div><p class="eyebrow">ROTA PERSONALIZADA</p><h3>Sequência de rotação por funcionário</h3><p>Arraste os steps para definir a ordem individual da rotação.</p></div></div><div id="routeEditor" class="route-editor"></div></section><section class="history-panel"><div class="route-panel-head"><div><p class="eyebrow">HISTÓRICO DIÁRIO</p><h3>Registro das alocações</h3><p>Cada alteração e rotação fica registrada por linha, data e horário.</p></div></div><div id="historyList" class="history-list"></div></section><p class="local-note">Na rotação, cada montador segue sua própria sequência. Se nenhuma rota for cadastrada, o sistema usa automaticamente os steps em que ele está habilitado.</p></section><p class="local-note">Esta é uma versão local: os dados ficam armazenados no localStorage deste navegador e não são sincronizados entre computadores.</p>
+    </main>
+  </div>
+  <div class="modal-backdrop hidden" id="modalBackdrop"><div class="modal"><button class="modal-close" id="closeModal">×</button><p class="eyebrow">CADASTRO</p><h2 id="modalTitle">Adicionar</h2><label id="modalLabel">Nome</label><input id="modalInput" autocomplete="off"><div class="modal-actions"><button class="btn secondary" id="cancelModal">Cancelar</button><button class="btn primary" id="saveModal">Salvar</button></div></div></div>
+  <script src="app.js"></script>
+</body>
+</html>

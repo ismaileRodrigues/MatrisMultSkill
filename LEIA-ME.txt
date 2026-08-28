@@ -1,0 +1,31 @@
+MATRIZ MULTI SKILL — VERSÃO LOCAL
+
+Como executar:
+1. Extraia o arquivo ZIP.
+2. Abra o arquivo index.html com duplo clique em qualquer navegador moderno.
+3. Use os botões Funcionário e Operação para cadastrar entradas.
+4. Clique no nome do funcionário ou no código da operação para editar.
+5. Clique no X para remover uma entrada.
+6. Altere qualquer célula da matriz para definir Titular, Nível 1, Nível 2, Nível 3, formação planejada ou sem habilitação.
+
+Distribuição da linha:
+1. Abra “Distribuição da linha” no menu lateral.
+2. Use “＋ Nova linha” para cadastrar cada linha de montagem e o seletor para alternar entre elas.
+3. Aloque os montadores nos steps. A mesma pessoa não pode ocupar dois steps dentro da mesma linha.
+4. Para definir uma rota personalizada, arraste os cartões de step do funcionário até a ordem desejada. A sequência será usada na rotação manual e automática.
+5. Configure a data, a frequência e o modo automático. Quando a data vencer e a página estiver aberta, a rotação será executada automaticamente.
+6. O painel “Histórico diário” registra alocações, alterações de rota e rotações por linha, data, horário e quantidade de montadores.
+
+Persistência:
+As alterações são salvas automaticamente no localStorage do navegador. Elas permanecem neste computador e neste navegador, mas não são sincronizadas entre máquinas.
+
+Transferência entre máquinas:
+1. Clique em “Exportar JSON” para baixar um arquivo com funcionários, operações, habilitações, linhas, alocações, rotas e histórico.
+2. Na outra máquina, abra o mesmo index.html.
+3. Clique em “Importar JSON” e selecione o arquivo exportado.
+4. A matriz, as linhas, as rotas e o histórico serão restaurados no navegador dessa máquina.
+
+O arquivo JSON contém a versão do formato, a data da exportação, funcionários, operações, mapa de habilitações, linhas de montagem, alocações, rotas personalizadas e histórico. A importação valida essa estrutura antes de substituir os dados atuais.
+
+Importante:
+Esta versão foi feita para uso local e não possui autenticação real de servidor. A rotação automática depende de o index.html permanecer aberto; com o navegador completamente fechado, nenhuma rotina local pode ser executada. Para acesso multiusuário, sincronização entre computadores, controle de permissões ou execução automática com o computador desligado, utilize a versão web com backend.
