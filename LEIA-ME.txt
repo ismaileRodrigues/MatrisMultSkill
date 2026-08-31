@@ -15,7 +15,7 @@ Distribuição da linha:
 1. Abra “Distribuição da linha” no menu lateral.
 2. Use “＋ Nova linha” para cadastrar cada linha de montagem e o seletor para alternar entre elas.
 3. Aloque os montadores nos steps. A mesma pessoa não pode ocupar dois steps dentro da mesma linha.
-4. Para definir uma rota personalizada, arraste os cartões de step do funcionário até a ordem desejada. A sequência será usada na rotação manual e automática.
+4. Para definir uma rota personalizada, arraste os cartões de step do funcionário até a ordem desejada. A sequência será usada na rotação manual e automática. O step em que o funcionário está alocado aparece destacado com a etiqueta “ATUAL”; funcionários sem alocação mostram “Sem alocação atual”.
 5. Configure a data, a frequência e o modo automático. Quando a data vencer e a página estiver aberta, a rotação será executada automaticamente.
 6. A rotação escolhe outro step habilitado e não mantém o funcionário no mesmo step em duas rotações consecutivas quando houver alternativa válida. Ele poderá voltar ao step anterior em uma rotação posterior.
 
