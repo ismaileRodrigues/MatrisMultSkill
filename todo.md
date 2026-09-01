@@ -15,3 +15,6 @@
 - [x] Exibir prévia da sugestão antes de aplicar as alocações
 - [x] Manter o fluxo manual de alocação funcionando independentemente da sugestão
 - [x] Persistir, documentar, testar e enviar a alteração ao repositório
+- [x] Alertar quando a sugestão deixar steps vazios por falta de skill disponível
+- [x] Listar os steps e indicar que precisam de novos funcionários em capacitação
+- [x] Testar o alerta com um cenário sem candidato habilitado e atualizar o repositório
