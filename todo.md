@@ -18,3 +18,8 @@
 - [x] Alertar quando a sugestão deixar steps vazios por falta de skill disponível
 - [x] Listar os steps e indicar que precisam de novos funcionários em capacitação
 - [x] Testar o alerta com um cenário sem candidato habilitado e atualizar o repositório
+
+- [x] Maximizar a cobertura dos steps na sugestão automática antes de priorizar o nível da skill
+- [x] Redistribuir funcionários entre steps para preencher a maior quantidade possível sem duplicidade
+- [x] Validar que a sugestão evita steps vazios quando existe uma combinação viável de funcionários e skills
+- [x] Atualizar o alerta para informar apenas lacunas realmente inevitáveis e enviar a melhoria ao GitHub
