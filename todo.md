@@ -23,3 +23,8 @@
 - [x] Redistribuir funcionários entre steps para preencher a maior quantidade possível sem duplicidade
 - [x] Validar que a sugestão evita steps vazios quando existe uma combinação viável de funcionários e skills
 - [x] Atualizar o alerta para informar apenas lacunas realmente inevitáveis e enviar a melhoria ao GitHub
+
+- [x] Iniciar o menu lateral recolhido e permitir abrir e fechar por botão
+- [x] Ajustar a área de conteúdo para aproveitar o espaço quando o menu estiver fechado
+- [x] Validar o controle do menu em desktop e mobile
+- [x] Salvar e enviar o ajuste de navegação ao GitHub
