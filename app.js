@@ -81,18 +81,12 @@ function rotateAssignments(){
     }
     rotationOptions.set(employee.id,{route,visited,currentOpId});
   });
-  const canUse=(employee,opId)=>{
-    const info=rotationOptions.get(employee.id);
-    if(!isApto(skill(employee.id,opId)))return false;
-    const alternatives=info.route.filter(id=>id!==info.currentOpId&&!info.visited.includes(id));
-    if(opId===info.currentOpId)return alternatives.length===0;
-    return !info.visited.includes(opId);
-  };
+  const canUse=(employee,opId)=>isApto(skill(employee.id,opId));
   const match=(allowSameStep)=>{
     const employeeToOperation=new Map();
     const operationToEmployee=new Map();
     const orderedOperations=shuffled(operations).sort((a,b)=>candidateMap.get(a.id).length-candidateMap.get(b.id).length);
-    const orderedCandidates=(op)=>shuffled(candidateMap.get(op.id)).filter(employee=>canUse(employee,op.id)&& (allowSameStep || rotationOptions.get(employee.id).currentOpId!==op.id)).sort((a,b)=>{
+    const orderedCandidates=(op)=>shuffled(candidateMap.get(op.id)).filter(employee=>canUse(employee,op.id)).sort((a,b)=>{
       const ai=rotationOptions.get(a.id), bi=rotationOptions.get(b.id);
       const aCurrent=ai.currentOpId===op.id?1:0, bCurrent=bi.currentOpId===op.id?1:0;
       return aCurrent-bCurrent || (ai.visited.includes(op.id)?1:0)-(bi.visited.includes(op.id)?1:0) || skillScore(skill(b.id,op.id))-skillScore(skill(a.id,op.id));
@@ -117,11 +111,13 @@ function rotateAssignments(){
     orderedOperations.forEach(op=>reassign(op.id,new Set(),new Set()));
     const assignments={};
     operationToEmployee.forEach((employeeId,opId)=>assignments[opId]=employeeId);
-    return {assignments,assigned:operationToEmployee.size,repeated:[...operationToEmployee.entries()].filter(([opId,employeeId])=>current[opId]===employeeId).length};
+    const entries=[...operationToEmployee.entries()];
+    const fresh=entries.filter(([opId,employeeId])=>!rotationOptions.get(employeeId).visited.includes(opId)).length;
+    const repeated=entries.filter(([opId,employeeId])=>current[opId]===employeeId).length;
+    return {assignments,assigned:entries.length,fresh,repeated};
   };
-  const moved=match(false);
-  const completed=match(true);
-  const best=completed.assigned>moved.assigned||(completed.assigned===moved.assigned&&completed.repeated<moved.repeated)?completed:moved;
+  const attempts=Array.from({length:Math.max(12,operations.length*3)},()=>match(true));
+  const best=attempts.reduce((winner,candidate)=>candidate.assigned>winner.assigned||(candidate.assigned===winner.assigned&&(candidate.fresh>winner.fresh||(candidate.fresh===winner.fresh&&candidate.repeated<winner.repeated)))?candidate:winner);
   plan.assignments=best.assignments;
   Object.entries(best.assignments).forEach(([opId,empId])=>{
     const info=rotationOptions.get(empId);
