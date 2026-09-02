@@ -25,3 +25,5 @@
 @media(max-width:480px){.content{padding-inline:12px}.topbar .actions .menu-toggle{flex:1 1 100%}}
 
 .assembler-ineligible{padding:8px 8px!important;margin:0 -8px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa}.assembler-ineligible .assembler-avatar{background:#ffedd5;color:#c2410c}.assembler-ineligible .assembler-level{color:#c2410c;font-weight:700}
+
+.rotation-summary{display:inline-block;margin-top:6px;color:#64748b;font-size:.82rem}.rotation-summary strong{color:#0f766e}

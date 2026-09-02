@@ -33,3 +33,9 @@
 - [x] Restringir a distribuição manual e automática aos níveis Titular e Nível 3
 - [x] Manter Nível 1 e Nível 2 disponíveis na tabela apenas para controle
 - [x] Validar a nova regra e enviar a alteração ao GitHub
+
+- [x] Fazer a rotação manual e automática preservar a cobertura de todos os steps possíveis
+- [x] Reorganizar funcionários aptos entre steps durante a rotação sem deixar posição vazia por escolha local
+- [x] Impedir repetição no mesmo step em ciclos consecutivos, permitindo retornar depois de passar por outro step
+- [x] Validar a rotação com cenário de funcionário flexível e funcionário restrito
+- [x] Enviar a correção da rotação ao GitHub
