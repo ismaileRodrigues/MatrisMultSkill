@@ -1,0 +1,12 @@
+const fs=require('fs'),vm=require('vm');
+const s=fs.readFileSync('/home/ubuntu/MatrisMultSkill/app.js','utf8');
+const a=s.indexOf('function scheduledOperationFor'),b=s.indexOf('\nfunction renderMatrixSelector',a);
+const employees=[{id:'e1',name:'Marlene'},{id:'e2',name:'Natan'}];
+const operations=[{id:'o1',code:'07SM 2 D'},{id:'o2',code:'07SM 2 E'}];
+const plan={weeklySchedules:{e1:{segunda:'o1',terca:'o2'},e2:{segunda:'o2',terca:'o1'}},assignments:{},rotationRoutes:{},rotationState:{}};
+const ctx={state:{employees,operations,skills:{'e1|o1':'titular','e1|o2':'titular','e2|o1':'titular','e2|o2':'titular'}},activePlan:()=>plan,isApto:v=>v==='titular'||v==='nivel_3',skill:(e,o)=>ctx.state.skills[e+'|'+o]||'sem_habilitacao',currentWeekday:()=>ctx.day};
+vm.createContext(ctx);vm.runInContext(s.slice(a,b),ctx);
+ctx.day='segunda';let monday=ctx.assignmentsForToday(plan);if(monday.o1!=='e1'||monday.o2!=='e2')throw Error('programação de segunda não refletida');
+ctx.day='terca';let tuesday=ctx.assignmentsForToday(plan);if(tuesday.o1!=='e2'||tuesday.o2!=='e1')throw Error('programação de terça não refletida');
+if(plan.weeklySchedules.e1.segunda!=='o1')throw Error('programação não preservada para localStorage');
+console.log('OK quadro semanal e persistência');

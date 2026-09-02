@@ -21,7 +21,7 @@ Distribuição da linha:
 7. Use “✦ Sugerir distribuição” para gerar uma prévia da melhor distribuição da linha ativa. O sistema prioriza maior nível de competência, mantém alocações existentes quando possível, não repete funcionários em dois steps e deixa vazio o step sem montador habilitado disponível. A sugestão só altera a linha depois de clicar em “Aplicar sugestão”; a alocação manual continua disponível a qualquer momento.
 
 Persistência e transferência:
-As alterações são salvas automaticamente no localStorage deste navegador. Para levar os dados a outra máquina, clique em “Exportar JSON”. Na outra máquina, abra index.html, clique em “Importar JSON” e selecione o arquivo. O JSON inclui todas as tabelas, linhas, alocações, habilitações, rotas personalizadas e o progresso dos ciclos. A importação aceita UTF-8 com ou sem BOM e mantém compatibilidade com exportações anteriores.
+As alterações são salvas automaticamente no localStorage deste navegador, incluindo a programação semanal de cada funcionário. Para levar os dados a outra máquina, clique em “Exportar JSON”. Na outra máquina, abra index.html, clique em “Importar JSON” e selecione o arquivo. O JSON inclui todas as tabelas, linhas, alocações, habilitações, programação de segunda a sexta-feira e o progresso dos ciclos. A importação aceita UTF-8 com ou sem BOM e mantém compatibilidade com exportações anteriores.
 
 Importante:
 Esta versão foi feita para uso local e não possui autenticação real de servidor. A rotação automática depende de o index.html permanecer aberto; com o navegador completamente fechado, nenhuma rotina local pode ser executada.
