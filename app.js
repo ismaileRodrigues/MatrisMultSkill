@@ -4,8 +4,8 @@ const defaultEmployees = ['Marlene','Natan','Cassiane','Ronald','Alisson','Izabe
 const defaultOperations = ['07SM 11 D','07SM 11 E','07SM 12 D','07SM 12 E','07SM 13','07SM 14','07SM 15','07SM 16','07SM 50','07SM 51','07SM 52 1','07SM 52 2','07SM 53'];
 const titularMap = {'07SM 11 D':'Marlene','07SM 11 E':'Natan','07SM 12 D':'Cassiane','07SM 12 E':'Alisson','07SM 13':'Anderson Santos','07SM 14':'Maria Eduarda','07SM 15':'Ivana','07SM 16':'Jeisse','07SM 50':'Maria','07SM 51':'Izabele','07SM 52 1':'Marcia Souza','07SM 52 2':'Richard','07SM 53':'Larissa'};
 let state = load(); let modalMode = null; let modalId = null; let draggedRoute = null; let pendingSuggestion = null;
-function blankPlan(id, name){ return {id, name, mode:'manual', frequency:'daily', scheduledDate:'', assignments:{}, lastRun:'', rotationRoutes:{}}; }
-function migratePlan(p, i=0){ const plan = {...blankPlan(p?.id || 'line-'+(i+1), p?.name || 'Linha '+(i+1)), ...(p||{})}; plan.assignments = {...(p?.assignments||{})}; plan.rotationRoutes = {...(p?.rotationRoutes||{})}; delete plan.history; return plan; }
+function blankPlan(id, name){ return {id, name, mode:'manual', frequency:'daily', scheduledDate:'', assignments:{}, lastRun:'', rotationRoutes:{}, rotationState:{}}; }
+function migratePlan(p, i=0){ const plan = {...blankPlan(p?.id || 'line-'+(i+1), p?.name || 'Linha '+(i+1)), ...(p||{})}; plan.assignments = {...(p?.assignments||{})}; plan.rotationRoutes = {...(p?.rotationRoutes||{})}; plan.rotationState = {...(p?.rotationState||{})}; delete plan.history; return plan; }
 function matrixFromState(source,id,name){const linePlans=Array.isArray(source.linePlans)&&source.linePlans.length?source.linePlans.map(migratePlan):[migratePlan(source.linePlan)];return {id,name,employees:(source.employees||[]).map(e=>({...e})),operations:(source.operations||[]).map(o=>({...o})),skills:{...(source.skills||{})},linePlans,activeLineId:source.activeLineId||linePlans[0].id};}
 function activateMatrix(id){const matrix=state.matrices.find(m=>m.id===id)||state.matrices[0];if(!matrix)return;state.activeMatrixId=matrix.id;state.employees=matrix.employees;state.operations=matrix.operations;state.skills=matrix.skills;state.linePlans=matrix.linePlans;state.activeLineId=matrix.activeLineId||matrix.linePlans[0].id;}
 function syncCurrentMatrix(){if(!state?.matrices)return;const matrix=state.matrices.find(m=>m.id===state.activeMatrixId);if(!matrix)return;matrix.employees=state.employees;matrix.operations=state.operations;matrix.skills=state.skills;matrix.linePlans=state.linePlans;matrix.activeLineId=state.activeLineId;}
@@ -42,7 +42,90 @@ function saveRouteOrder(empId,ids){const unique=[...new Set(ids)].filter(id=>eli
 function bindRouteEvents(){document.querySelectorAll('.route-item').forEach(item=>{item.addEventListener('dragstart',()=>{draggedRoute={empId:item.dataset.routeEmployee,index:Number(item.dataset.routeIndex)};item.classList.add('dragging')});item.addEventListener('dragend',()=>{draggedRoute=null;item.classList.remove('dragging')});});document.querySelectorAll('.route-dropzone').forEach(zone=>{zone.addEventListener('dragover',e=>e.preventDefault());zone.addEventListener('drop',e=>{e.preventDefault();if(!draggedRoute||draggedRoute.empId!==zone.dataset.routeEmployee)return;const target=e.target.closest('.route-item');const route=routeFor(draggedRoute.empId);const from=draggedRoute.index;let to=target?Number(target.dataset.routeIndex):route.length;if(from===to||(!target&&from===route.length-1))return;const [moved]=route.splice(from,1);if(target&&from<to)to--;route.splice(Math.max(0,to),0,moved);saveRouteOrder(draggedRoute.empId,route);});});document.querySelectorAll('[data-route-reset]').forEach(b=>b.onclick=()=>{delete activePlan().rotationRoutes[b.dataset.routeReset];save();renderLineBoard();flash('Rota padrão restaurada');});}
 function openAssignModal(opId){modalMode='assign';modalId=opId;document.querySelector('#modalTitle').textContent='Alocar montador';document.querySelector('#modalLabel').textContent='Selecione o funcionário';const op=state.operations.find(o=>o.id===opId);const plan=activePlan();const eligible=state.employees.filter(e=>isApto(skill(e.id,opId))&&!Object.entries(plan.assignments).some(([id,emp])=>id!==opId&&emp===e.id));const options=eligible.map(e=>{const info=levelInfo(skill(e.id,opId));return `<option value="${e.id}">${escapeHtml(e.name)} (${info[1]})</option>`}).join('')||'<option value="">Nenhum montador apto ou disponível</option>';document.querySelector('#modalInput').outerHTML=`<select id="modalInput" class="modal-select"><option value="">Selecione...</option>${options}</select>`;document.querySelector('#modalBackdrop').classList.remove('hidden');}
 function assign(opId,empId){const plan=activePlan();if(empId&&!isApto(skill(empId,opId))){flash('Somente Titular ou Nível 3 pode ser distribuído');return;}Object.keys(plan.assignments).forEach(id=>{if(id!==opId&&plan.assignments[id]===empId)delete plan.assignments[id]});if(empId)plan.assignments[opId]=empId;else delete plan.assignments[opId];save();render();flash(empId?'Montador alocado':'Alocação removida');}
-function rotateAssignments(){const plan=activePlan();const current=plan.assignments||{};const operations=[...state.operations];const employees=[...state.employees];const currentOperationByEmployee=new Map();Object.entries(current).forEach(([opId,empId])=>{const emp=employees.find(e=>e.id===empId);if(emp&&isApto(skill(emp.id,opId))&&!currentOperationByEmployee.has(emp.id))currentOperationByEmployee.set(emp.id,opId);});const candidateMap=new Map();operations.forEach(op=>{candidateMap.set(op.id,employees.filter(emp=>isApto(skill(emp.id,op.id))));});const rotationRank=(employee,opId)=>{const route=routeFor(employee.id);const currentOpId=currentOperationByEmployee.get(employee.id);if(!currentOpId)return Math.max(0,route.indexOf(opId));const index=route.indexOf(currentOpId);const ordered=index<0?route:route.slice(index+1).concat(route.slice(0,index+1));const rank=ordered.indexOf(opId);return rank<0?route.length+1:rank;};const match=(allowSameStep)=>{const employeeToOperation=new Map();const operationToEmployee=new Map();const orderedCandidates=op=>candidateMap.get(op.id).filter(employee=>allowSameStep||currentOperationByEmployee.get(employee.id)!==op.id).sort((a,b)=>{const ar=currentOperationByEmployee.has(a.id)?0:1;const br=currentOperationByEmployee.has(b.id)?0:1;return (currentOperationByEmployee.get(a.id)===op.id?1:0)-(currentOperationByEmployee.get(b.id)===op.id?1:0)||ar-br||rotationRank(a,op.id)-rotationRank(b,op.id)||skillScore(skill(b.id,op.id))-skillScore(skill(a.id,op.id))||a.name.localeCompare(b.name,'pt-BR');});const reassign=(opId,seenEmployees,seenOperations)=>{if(seenOperations.has(opId))return false;seenOperations.add(opId);const op=operations.find(item=>item.id===opId);if(!op)return false;for(const employee of orderedCandidates(op)){if(seenEmployees.has(employee.id))continue;seenEmployees.add(employee.id);const previousOperationId=employeeToOperation.get(employee.id);if(!previousOperationId||reassign(previousOperationId,seenEmployees,seenOperations)){employeeToOperation.set(employee.id,opId);operationToEmployee.set(opId,employee.id);return true;}}return false;};[...operations].sort((a,b)=>candidateMap.get(a.id).length-candidateMap.get(b.id).length||a.code.localeCompare(b.code,'pt-BR')).forEach(op=>reassign(op.id,new Set(),new Set()));const assignments={};operationToEmployee.forEach((employeeId,opId)=>{assignments[opId]=employeeId;});return {assignments,assigned:operationToEmployee.size,repeated:[...operationToEmployee.entries()].filter(([opId,employeeId])=>current[opId]===employeeId).length};};const moved=match(false);const completed=match(true);const best=completed.assigned>moved.assigned?completed:moved;plan.assignments=best.assignments;plan.lastRun=today();plan.lastRotation={date:today(),assigned:best.assigned,total:operations.length,repeated:best.repeated};if(plan.scheduledDate){const date=new Date(plan.scheduledDate+'T00:00:00');date.setDate(date.getDate()+(plan.frequency==='daily'?1:7));plan.scheduledDate=date.toISOString().slice(0,10);}return plan.lastRotation;}
+function rotateAssignments(){
+  const plan=activePlan();
+  const current=plan.assignments||{};
+  const operations=[...state.operations];
+  const employees=[...state.employees];
+  const currentOperationByEmployee=new Map();
+  Object.entries(current).forEach(([opId,empId])=>{
+    const emp=employees.find(e=>e.id===empId);
+    if(emp&&isApto(skill(emp.id,opId))&&!currentOperationByEmployee.has(emp.id)) currentOperationByEmployee.set(emp.id,opId);
+  });
+  const candidateMap=new Map();
+  operations.forEach(op=>candidateMap.set(op.id,employees.filter(emp=>isApto(skill(emp.id,op.id)))));
+  plan.rotationState=plan.rotationState&&typeof plan.rotationState==='object'?plan.rotationState:{};
+  const shuffled=(items)=>{
+    const result=[...items];
+    for(let i=result.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}
+    return result;
+  };
+  const rotationOptions=new Map();
+  employees.forEach(employee=>{
+    const route=routeFor(employee.id);
+    const currentOpId=currentOperationByEmployee.get(employee.id);
+    let visited=Array.isArray(plan.rotationState[employee.id]?.visited)?plan.rotationState[employee.id].visited.filter(id=>route.includes(id)):[];
+    const next=()=>route.filter(id=>id!==currentOpId&&!visited.includes(id));
+    if(!next().length){
+      visited=[];
+      plan.rotationState[employee.id]={visited};
+    }
+    rotationOptions.set(employee.id,{route,visited,currentOpId});
+  });
+  const canUse=(employee,opId)=>{
+    const info=rotationOptions.get(employee.id);
+    if(!isApto(skill(employee.id,opId)))return false;
+    const alternatives=info.route.filter(id=>id!==info.currentOpId&&!info.visited.includes(id));
+    if(opId===info.currentOpId)return alternatives.length===0;
+    return !info.visited.includes(opId);
+  };
+  const match=(allowSameStep)=>{
+    const employeeToOperation=new Map();
+    const operationToEmployee=new Map();
+    const orderedOperations=shuffled(operations).sort((a,b)=>candidateMap.get(a.id).length-candidateMap.get(b.id).length);
+    const orderedCandidates=(op)=>shuffled(candidateMap.get(op.id)).filter(employee=>canUse(employee,op.id)&& (allowSameStep || rotationOptions.get(employee.id).currentOpId!==op.id)).sort((a,b)=>{
+      const ai=rotationOptions.get(a.id), bi=rotationOptions.get(b.id);
+      const aCurrent=ai.currentOpId===op.id?1:0, bCurrent=bi.currentOpId===op.id?1:0;
+      return aCurrent-bCurrent || (ai.visited.includes(op.id)?1:0)-(bi.visited.includes(op.id)?1:0) || skillScore(skill(b.id,op.id))-skillScore(skill(a.id,op.id));
+    });
+    const reassign=(opId,seenEmployees,seenOperations)=>{
+      if(seenOperations.has(opId))return false;
+      seenOperations.add(opId);
+      const op=operations.find(item=>item.id===opId);
+      if(!op)return false;
+      for(const employee of orderedCandidates(op)){
+        if(seenEmployees.has(employee.id))continue;
+        seenEmployees.add(employee.id);
+        const previousOperationId=employeeToOperation.get(employee.id);
+        if(!previousOperationId||reassign(previousOperationId,seenEmployees,seenOperations)){
+          employeeToOperation.set(employee.id,opId);
+          operationToEmployee.set(opId,employee.id);
+          return true;
+        }
+      }
+      return false;
+    };
+    orderedOperations.forEach(op=>reassign(op.id,new Set(),new Set()));
+    const assignments={};
+    operationToEmployee.forEach((employeeId,opId)=>assignments[opId]=employeeId);
+    return {assignments,assigned:operationToEmployee.size,repeated:[...operationToEmployee.entries()].filter(([opId,employeeId])=>current[opId]===employeeId).length};
+  };
+  const moved=match(false);
+  const completed=match(true);
+  const best=completed.assigned>moved.assigned||(completed.assigned===moved.assigned&&completed.repeated<moved.repeated)?completed:moved;
+  plan.assignments=best.assignments;
+  Object.entries(best.assignments).forEach(([opId,empId])=>{
+    const info=rotationOptions.get(empId);
+    if(!info)return;
+    const visited=new Set(info.visited);
+    visited.add(opId);
+    plan.rotationState[empId]={visited:[...visited].filter(id=>info.route.includes(id))};
+  });
+  plan.lastRun=today();
+  plan.lastRotation={date:today(),assigned:best.assigned,total:operations.length,repeated:best.repeated};
+  if(plan.scheduledDate){const date=new Date(plan.scheduledDate+'T00:00:00');date.setDate(date.getDate()+(plan.frequency==='daily'?1:7));plan.scheduledDate=date.toISOString().slice(0,10);}
+  return plan.lastRotation;
+}
 function maybeRunScheduledRotation(){const plan=activePlan();const day=today();if(plan.mode==='automatic'&&plan.scheduledDate&&day>=plan.scheduledDate&&plan.lastRun!==day){rotateAssignments();save();}}
 function runRotation(){const summary=rotateAssignments();save();render();const missing=summary.total-summary.assigned;flash(missing?`Rotação concluída com ${missing} step(s) sem alocação possível`:`Rotação concluída com ${summary.assigned} de ${summary.total} steps alocados`);}
 function skillScore(value){return {titular:4,nivel_1:3,nivel_2:2,nivel_3:1,formacao_planejada:0}[value]??-1;}
@@ -58,10 +141,35 @@ function closeModal(){document.querySelector('#modalBackdrop').classList.add('hi
 function saveModal(){const input=document.querySelector('#modalInput');const value=input.value.trim();if(modalMode==='assign'){if(value)assign(modalId,value);closeModal();return;}if(value.length<2)return;if(modalMode==='matrix'){if(modalId)state.matrices.find(m=>m.id===modalId).name=value;else{const id='table-'+Date.now();const copy=matrixFromState({employees:state.employees,operations:state.operations,skills:state.skills,linePlans:state.linePlans,activeLineId:state.activeLineId},id,value);state.matrices.push(copy);syncCurrentMatrix();activateMatrix(id);}save();closeModal();render();flash('Tabela salva');return;}if(modalMode==='line'){if(modalId)state.linePlans.find(l=>l.id===modalId).name=value;else{const id='line-'+Date.now();state.linePlans.push(blankPlan(id,value));state.activeLineId=id;}save();closeModal();renderLineBoard();flash('Linha salva');return;}if(modalMode==='employee'){if(modalId)state.employees.find(e=>e.id===modalId).name=value;else state.employees.push({id:'e'+Date.now(),name:value});}else{if(modalId)state.operations.find(o=>o.id===modalId).code=value;else state.operations.push({id:'o'+Date.now(),code:value});}save();closeModal();render();flash('Alteração salva');}
 function deleteActiveLine(){if(state.linePlans.length<=1){flash('Mantenha pelo menos uma linha');return;}if(confirm('Remover esta linha?')){state.linePlans=state.linePlans.filter(l=>l.id!==activePlan().id);state.activeLineId=state.linePlans[0].id;save();renderLineBoard();flash('Linha removida');}}
 function deleteActiveMatrix(){if(state.matrices.length<=1){flash('Mantenha pelo menos uma tabela');return;}const matrix=state.matrices.find(m=>m.id===state.activeMatrixId);if(confirm(`Remover a tabela "${matrix?.name||''}"?`)){state.matrices=state.matrices.filter(m=>m.id!==state.activeMatrixId);activateMatrix(state.matrices[0].id);save();render();flash('Tabela removida');}}
-function exportJson(){syncCurrentMatrix();const payload={format:'Matriz Multi Skill Local',version:3,exportedAt:new Date().toISOString(),matrices:state.matrices,activeMatrixId:state.activeMatrixId,employees:state.employees,operations:state.operations,skills:state.skills,linePlans:state.linePlans,activeLineId:state.activeLineId};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='matriz-multi-skill-'+today()+'.json';a.click();URL.revokeObjectURL(url);flash('JSON exportado com sucesso');}
-function validMatrix(data){if(!data||!Array.isArray(data.employees)||!Array.isArray(data.operations)||!data.skills||typeof data.skills!=='object'||!data.employees.length||!data.operations.length)return false;const eids=new Set(),oids=new Set(),allowed=new Set(levels.map(l=>l[0]));if(data.employees.some(e=>!e||typeof e.id!=='string'||!e.id.trim()||typeof e.name!=='string'||!e.name.trim()||eids.has(e.id)))return false;data.employees.forEach(e=>eids.add(e.id));if(data.operations.some(o=>!o||typeof o.id!=='string'||!o.id.trim()||typeof o.code!=='string'||!o.code.trim()||oids.has(o.id)))return false;data.operations.forEach(o=>oids.add(o.id));if(!Object.entries(data.skills).every(([k,v])=>{const p=k.split('|');return p.length===2&&eids.has(p[0])&&oids.has(p[1])&&typeof v==='string'&&allowed.has(v)}))return false;const plans=Array.isArray(data.linePlans)?data.linePlans:(data.linePlan?[data.linePlan]:[]);return plans.length>0&&plans.every(p=>p&&typeof p==='object'&&typeof (p.name||'Linha')==='string'&&(!p.assignments||Object.entries(p.assignments).every(([o,e])=>oids.has(o)&&eids.has(e))));}
+function exportJson(){syncCurrentMatrix();const payload={format:'Matriz Multi Skill Local',version:4,exportedAt:new Date().toISOString(),matrices:state.matrices,activeMatrixId:state.activeMatrixId,employees:state.employees,operations:state.operations,skills:state.skills,linePlans:state.linePlans,activeLineId:state.activeLineId};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='matriz-multi-skill-'+today()+'.json';a.click();URL.revokeObjectURL(url);flash('JSON exportado com sucesso');}
+function validMatrix(data){
+  if(!data||!Array.isArray(data.employees)||!Array.isArray(data.operations)||!data.skills||typeof data.skills!=='object'||!data.employees.length||!data.operations.length)return false;
+  const eids=new Set(),oids=new Set(),allowed=new Set(levels.map(l=>l[0]));
+  if(data.employees.some(e=>!e||typeof e.id!=='string'||!e.id.trim()||typeof e.name!=='string'||!e.name.trim()||eids.has(e.id)))return false;
+  data.employees.forEach(e=>eids.add(e.id));
+  if(data.operations.some(o=>!o||typeof o.id!=='string'||!o.id.trim()||typeof o.code!=='string'||!o.code.trim()||oids.has(o.id)))return false;
+  data.operations.forEach(o=>oids.add(o.id));
+  if(!Object.entries(data.skills).every(([k,v])=>{const p=k.split('|');return p.length===2&&eids.has(p[0])&&oids.has(p[1])&&typeof v==='string'&&allowed.has(v)}))return false;
+  const plans=Array.isArray(data.linePlans)?data.linePlans:(data.linePlan?[data.linePlan]:[]);
+  return plans.length>0&&plans.every(p=>p&&typeof p==='object'&&typeof (p.name||'Linha')==='string'&&(!p.assignments||Object.entries(p.assignments).every(([o,e])=>oids.has(o)&&eids.has(e)))&&(!p.rotationRoutes||typeof p.rotationRoutes==='object'));
+}
 function validImport(data){const matrices=Array.isArray(data?.matrices)&&data.matrices.length?data.matrices:[data];return matrices.every(validMatrix)&&(!data?.activeMatrixId||matrices.some(m=>m.id===data.activeMatrixId));}
-function importJson(file){const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!validImport(data))throw new Error('Formato inválido');const rawMatrices=Array.isArray(data.matrices)&&data.matrices.length?data.matrices:[data];const matrices=rawMatrices.map((m,i)=>matrixFromState(m,m.id||'table-'+(i+1),m.name||'Tabela '+(i+1)));state={matrices,activeMatrixId:data.activeMatrixId||matrices[0].id};activateMatrix(state.activeMatrixId);save();render();flash('JSON importado com sucesso');}catch(e){flash('Não foi possível importar este JSON');}};reader.readAsText(file);}
+function importJson(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const text=String(reader.result||'').replace(/^\uFEFF/,'').trim();
+      const data=JSON.parse(text);
+      if(!validImport(data))throw new Error('Formato inválido');
+      const rawMatrices=Array.isArray(data.matrices)&&data.matrices.length?data.matrices:[data];
+      const matrices=rawMatrices.map((m,i)=>matrixFromState(m,m.id||'table-'+(i+1),m.name||'Tabela '+(i+1)));
+      state={matrices,activeMatrixId:data.activeMatrixId&&matrices.some(m=>m.id===data.activeMatrixId)?data.activeMatrixId:matrices[0].id};
+      activateMatrix(state.activeMatrixId);save();render();flash('JSON importado com sucesso');
+    }catch(e){console.error('Falha ao importar JSON:',e);flash('Não foi possível importar este JSON: formato inválido');}
+  };
+  reader.onerror=()=>flash('Não foi possível ler o arquivo JSON');
+  reader.readAsText(file,'UTF-8');
+}
 function flash(message){const n=document.createElement('div');n.textContent=message;n.style='position:fixed;right:20px;bottom:20px;background:#0f172a;color:white;padding:12px 16px;border-radius:10px;z-index:9;font-weight:600;font-size:13px;box-shadow:0 10px 30px #0003';document.body.appendChild(n);setTimeout(()=>n.remove(),1800);}
 function setMenu(open){const shell=document.querySelector('.app-shell');const toggle=document.querySelector('#menuToggle');if(!shell)return;shell.classList.toggle('menu-open',open);if(toggle){toggle.setAttribute('aria-expanded',String(open));toggle.textContent=open?'× Fechar menu':'☰ Abrir menu';}}
 function showMatrix(){document.querySelector('#matriz').classList.remove('hidden');document.querySelector('.summary-grid').classList.remove('hidden');document.querySelector('#lineScreen').classList.add('hidden');document.querySelector('#matrixNav').classList.add('active');document.querySelector('#lineNav').classList.remove('active');setMenu(false);}

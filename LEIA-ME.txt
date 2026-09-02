@@ -17,11 +17,11 @@ Distribuição da linha:
 3. Aloque os montadores nos steps. A mesma pessoa não pode ocupar dois steps dentro da mesma linha.
 4. Para definir uma rota personalizada, arraste os cartões de step do funcionário até a ordem desejada. A sequência será usada na rotação manual e automática. O step em que o funcionário está alocado aparece destacado com a etiqueta “ATUAL”; funcionários sem alocação mostram “Sem alocação atual”.
 5. Configure a data, a frequência e o modo automático. Quando a data vencer e a página estiver aberta, a rotação será executada automaticamente.
-6. A rotação escolhe outro step habilitado e não mantém o funcionário no mesmo step em duas rotações consecutivas quando houver alternativa válida. Ele poderá voltar ao step anterior em uma rotação posterior.
+6. A rotação embaralha as opções habilitadas de cada funcionário e avança por todos os steps disponíveis antes de iniciar um novo ciclo. Enquanto ainda houver skill não visitada, o funcionário não retorna ao step atual nem a um step já usado no ciclo; quando todas as opções forem percorridas, o ciclo é reiniciado. Se ele tiver apenas um step apto, permanece nele.
 7. Use “✦ Sugerir distribuição” para gerar uma prévia da melhor distribuição da linha ativa. O sistema prioriza maior nível de competência, mantém alocações existentes quando possível, não repete funcionários em dois steps e deixa vazio o step sem montador habilitado disponível. A sugestão só altera a linha depois de clicar em “Aplicar sugestão”; a alocação manual continua disponível a qualquer momento.
 
 Persistência e transferência:
-As alterações são salvas automaticamente no localStorage deste navegador. Para levar os dados a outra máquina, clique em “Exportar JSON”. Na outra máquina, abra index.html, clique em “Importar JSON” e selecione o arquivo. O JSON inclui todas as tabelas, linhas, alocações, habilitações e rotas personalizadas.
+As alterações são salvas automaticamente no localStorage deste navegador. Para levar os dados a outra máquina, clique em “Exportar JSON”. Na outra máquina, abra index.html, clique em “Importar JSON” e selecione o arquivo. O JSON inclui todas as tabelas, linhas, alocações, habilitações, rotas personalizadas e o progresso dos ciclos. A importação aceita UTF-8 com ou sem BOM e mantém compatibilidade com exportações anteriores.
 
 Importante:
 Esta versão foi feita para uso local e não possui autenticação real de servidor. A rotação automática depende de o index.html permanecer aberto; com o navegador completamente fechado, nenhuma rotina local pode ser executada.
