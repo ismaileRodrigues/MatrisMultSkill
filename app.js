@@ -6,7 +6,16 @@ const titularMap = {'07SM 11 D':'Marlene','07SM 11 E':'Natan','07SM 12 D':'Cassi
 let state = load(); let modalMode = null; let modalId = null; let draggedRoute = null; let pendingSuggestion = null;
 function blankPlan(id, name){ return {id, name, mode:'manual', frequency:'daily', scheduledDate:'', assignments:{}, lastRun:'', rotationRoutes:{}, rotationState:{}}; }
 function migratePlan(p, i=0){ const plan = {...blankPlan(p?.id || 'line-'+(i+1), p?.name || 'Linha '+(i+1)), ...(p||{})}; plan.assignments = {...(p?.assignments||{})}; plan.rotationRoutes = {...(p?.rotationRoutes||{})}; plan.rotationState = {...(p?.rotationState||{})}; delete plan.history; return plan; }
-function matrixFromState(source,id,name){const linePlans=Array.isArray(source.linePlans)&&source.linePlans.length?source.linePlans.map(migratePlan):[migratePlan(source.linePlan)];return {id,name,employees:(source.employees||[]).map(e=>({...e})),operations:(source.operations||[]).map(o=>({...o})),skills:{...(source.skills||{})},linePlans,activeLineId:source.activeLineId||linePlans[0].id};}
+function matrixFromState(source={},id,name){
+  const employees=(Array.isArray(source.employees)?source.employees:[]).filter(e=>e&&e.id!=null&&e.name!=null).map(e=>({...e,id:String(e.id),name:String(e.name)}));
+  const operations=(Array.isArray(source.operations)?source.operations:[]).filter(o=>o&&o.id!=null&&o.code!=null).map(o=>({...o,id:String(o.id),code:String(o.code)}));
+  const eids=new Set(employees.map(e=>e.id)), oids=new Set(operations.map(o=>o.id));
+  const skills={};
+  Object.entries(source.skills&&typeof source.skills==='object'?source.skills:{}).forEach(([key,value])=>{const [eid,oid]=key.split('|');if(eids.has(eid)&&oids.has(oid)&&levels.some(l=>l[0]===value))skills[eid+'|'+oid]=value;});
+  const rawPlans=Array.isArray(source.linePlans)&&source.linePlans.length?source.linePlans:[source.linePlan];
+  const linePlans=(rawPlans.filter(Boolean).length?rawPlans.filter(Boolean):[blankPlan('line-1','Linha 1')]).map((p,i)=>{const plan=migratePlan(p,i);const assignments={};Object.entries(plan.assignments||{}).forEach(([oid,eid])=>{if(oids.has(String(oid))&&eids.has(String(eid)))assignments[String(oid)]=String(eid);});plan.assignments=assignments;Object.keys(plan.rotationRoutes||{}).forEach(eid=>{plan.rotationRoutes[eid]=(Array.isArray(plan.rotationRoutes[eid])?plan.rotationRoutes[eid]:[]).map(String).filter(oid=>oids.has(oid));});return plan;});
+  return {id:String(id),name:String(name),employees,operations,skills,linePlans,activeLineId:linePlans.some(p=>p.id===source.activeLineId)?source.activeLineId:linePlans[0].id};
+}
 function activateMatrix(id){const matrix=state.matrices.find(m=>m.id===id)||state.matrices[0];if(!matrix)return;state.activeMatrixId=matrix.id;state.employees=matrix.employees;state.operations=matrix.operations;state.skills=matrix.skills;state.linePlans=matrix.linePlans;state.activeLineId=matrix.activeLineId||matrix.linePlans[0].id;}
 function syncCurrentMatrix(){if(!state?.matrices)return;const matrix=state.matrices.find(m=>m.id===state.activeMatrixId);if(!matrix)return;matrix.employees=state.employees;matrix.operations=state.operations;matrix.skills=state.skills;matrix.linePlans=state.linePlans;matrix.activeLineId=state.activeLineId;}
 function load(){
@@ -153,7 +162,7 @@ function validMatrix(data){
   const plans=Array.isArray(data.linePlans)?data.linePlans:(data.linePlan?[data.linePlan]:[]);
   return plans.length>0&&plans.every(p=>p&&typeof p==='object'&&typeof (p.name||'Linha')==='string'&&(!p.assignments||Object.entries(p.assignments).every(([o,e])=>oids.has(o)&&eids.has(e)))&&(!p.rotationRoutes||typeof p.rotationRoutes==='object'));
 }
-function validImport(data){const matrices=Array.isArray(data?.matrices)&&data.matrices.length?data.matrices:[data];return matrices.length>0&&matrices.every(validMatrix);}
+function validImport(data){const matrices=Array.isArray(data?.matrices)&&data.matrices.length?data.matrices:[data];return matrices.length>0&&matrices.every(m=>m&&Array.isArray(m.employees)&&Array.isArray(m.operations)&&m.skills&&typeof m.skills==='object');}
 function importJson(file){
   const reader=new FileReader();
   reader.onload=()=>{
