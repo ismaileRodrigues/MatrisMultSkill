@@ -28,3 +28,8 @@
 - [x] Ajustar a área de conteúdo para aproveitar o espaço quando o menu estiver fechado
 - [x] Validar o controle do menu em desktop e mobile
 - [x] Salvar e enviar o ajuste de navegação ao GitHub
+
+- [x] Considerar somente Titular e Nível 3 como aptos nos gráficos e indicadores de cobertura
+- [x] Restringir a distribuição manual e automática aos níveis Titular e Nível 3
+- [x] Manter Nível 1 e Nível 2 disponíveis na tabela apenas para controle
+- [x] Validar a nova regra e enviar a alteração ao GitHub

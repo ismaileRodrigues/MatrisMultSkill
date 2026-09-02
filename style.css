@@ -23,3 +23,5 @@
 @media(min-width:901px){.app-shell.menu-open .content{width:calc(100% - 250px);margin-left:250px}}
 @media(max-width:900px){.app-shell.menu-open .menu-backdrop{display:block}.sidebar{width:min(86vw,300px)}.sidebar-heading .brand{padding-bottom:30px}.content{padding-inline:16px}.topbar .actions{width:100%}.menu-toggle{order:-1}}
 @media(max-width:480px){.content{padding-inline:12px}.topbar .actions .menu-toggle{flex:1 1 100%}}
+
+.assembler-ineligible{padding:8px 8px!important;margin:0 -8px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa}.assembler-ineligible .assembler-avatar{background:#ffedd5;color:#c2410c}.assembler-ineligible .assembler-level{color:#c2410c;font-weight:700}
