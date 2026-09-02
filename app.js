@@ -153,7 +153,7 @@ function validMatrix(data){
   const plans=Array.isArray(data.linePlans)?data.linePlans:(data.linePlan?[data.linePlan]:[]);
   return plans.length>0&&plans.every(p=>p&&typeof p==='object'&&typeof (p.name||'Linha')==='string'&&(!p.assignments||Object.entries(p.assignments).every(([o,e])=>oids.has(o)&&eids.has(e)))&&(!p.rotationRoutes||typeof p.rotationRoutes==='object'));
 }
-function validImport(data){const matrices=Array.isArray(data?.matrices)&&data.matrices.length?data.matrices:[data];return matrices.every(validMatrix)&&(!data?.activeMatrixId||matrices.some(m=>m.id===data.activeMatrixId));}
+function validImport(data){const matrices=Array.isArray(data?.matrices)&&data.matrices.length?data.matrices:[data];return matrices.length>0&&matrices.every(validMatrix);}
 function importJson(file){
   const reader=new FileReader();
   reader.onload=()=>{
