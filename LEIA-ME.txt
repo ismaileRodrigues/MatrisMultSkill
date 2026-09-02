@@ -15,9 +15,9 @@ Distribuição da linha:
 1. Abra “Distribuição da linha” no menu lateral.
 2. Use “＋ Nova linha” para cadastrar cada linha de montagem e o seletor para alternar entre elas.
 3. Aloque os montadores nos steps. A mesma pessoa não pode ocupar dois steps dentro da mesma linha.
-4. Para definir uma rota personalizada, arraste os cartões de step do funcionário até a ordem desejada. A sequência será usada na rotação manual e automática. O step em que o funcionário está alocado aparece destacado com a etiqueta “ATUAL”; funcionários sem alocação mostram “Sem alocação atual”.
+4. No painel “Programação semanal”, use os campos de segunda-feira a sexta-feira para escolher o step apto de cada funcionário em cada dia. O step em que o funcionário está alocado aparece destacado com a etiqueta “ATUAL”; funcionários sem alocação mostram “Sem alocação atual”.
 5. Configure a data, a frequência e o modo automático. Quando a data vencer e a página estiver aberta, a rotação será executada automaticamente.
-6. A rotação embaralha as opções habilitadas de cada funcionário, busca a maior cobertura possível da linha e avança por todos os steps disponíveis antes de iniciar um novo ciclo. Enquanto ainda houver skill não visitada, o funcionário não retorna ao step atual nem a um step já usado no ciclo; quando todas as opções forem percorridas, o ciclo é reiniciado. Se ele tiver apenas um step apto, permanece nele. Um step só fica vazio quando não existe funcionário apto disponível para ele.
+6. A rotação considera a programação do dia da semana, busca a maior cobertura possível da linha e usa as demais skills aptas como alternativa quando há conflito. O histórico do ciclo continua evitando repetições prematuras. Um step só fica vazio quando não existe funcionário apto disponível para ele.
 7. Use “✦ Sugerir distribuição” para gerar uma prévia da melhor distribuição da linha ativa. O sistema prioriza maior nível de competência, mantém alocações existentes quando possível, não repete funcionários em dois steps e deixa vazio o step sem montador habilitado disponível. A sugestão só altera a linha depois de clicar em “Aplicar sugestão”; a alocação manual continua disponível a qualquer momento.
 
 Persistência e transferência:

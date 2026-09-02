@@ -18,6 +18,8 @@ const context = {
   routeFor: e => context.state.linePlans[0].rotationRoutes[e] || context.state.operations.map(o => o.id),
   skillScore: v => ({titular:4,nivel_1:3,nivel_2:2,nivel_3:1}[v] ?? -1),
   today: () => '2026-09-02',
+  currentWeekday: () => 'quarta',
+  scheduledOperationFor: () => '',
   activePlan: () => context.state.linePlans[0]
 };
 for (const op of context.state.operations) context.state.skills['e1|'+op.id] = 'titular';
