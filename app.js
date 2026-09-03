@@ -1,4 +1,5 @@
 const KEY = 'matriz-multi-skill-local-v1';
+const BACKUP_KEY = 'matriz-multi-skill-local-v1-backup';
 const levels = [['titular','Titular','T'],['nivel_1','Nível 1','N1'],['nivel_2','Nível 2','N2'],['nivel_3','Nível 3','N3'],['formacao_planejada','Formação planejada','FP'],['sem_habilitacao','Sem habilitação','—']];
 const WEEKDAYS = [['segunda','Segunda-feira'],['terca','Terça-feira'],['quarta','Quarta-feira'],['quinta','Quinta-feira'],['sexta','Sexta-feira']];
 const defaultEmployees = ['Marlene','Natan','Cassiane','Ronald','Alisson','Izabele','Ivana','Maria Eduarda','Anderson Santos','Jeisse','Marcia Souza','Marcia Seguro','Richard','Maria','Larissa','Alisson Douglas','Francieli'];
@@ -25,19 +26,22 @@ function createDefaultState(){
   operations.forEach(o=>{const emp=employees.find(e=>e.name===titularMap[o.code]);if(emp)skills[emp.id+'|'+o.id]='titular';});
   const first={employees,operations,skills,linePlans:[blankPlan('line-1','Linha 1')],activeLineId:'line-1'};const matrix=matrixFromState(first,'table-1','Tabela 1');return {...matrix,matrices:[matrix],activeMatrixId:matrix.id};
 }
+function stateFromSaved(saved){
+  if(!saved||typeof saved!=='object')return null;
+  const rawMatrices=Array.isArray(saved.matrices)&&saved.matrices.length?saved.matrices:[saved];
+  const matrices=rawMatrices.map((m,i)=>matrixFromState(m,m?.id||'table-'+(i+1),m?.name||'Tabela '+(i+1))).filter(m=>m.employees.length&&m.operations.length);
+  if(!matrices.length)return null;
+  const activeId=matrices.some(m=>m.id===String(saved.activeMatrixId))?String(saved.activeMatrixId):matrices[0].id;const first=matrices.find(m=>m.id===activeId)||matrices[0];
+  return {matrices,activeMatrixId:first.id,employees:first.employees,operations:first.operations,skills:first.skills,linePlans:first.linePlans,activeLineId:first.activeLineId};
+}
+function readStoredState(key){try{const raw=localStorage.getItem(key);return raw?stateFromSaved(JSON.parse(raw)):null;}catch(error){console.warn('Registro local inválido em '+key,error);return null;}}
 function load(){
-  try{
-    const saved=JSON.parse(localStorage.getItem(KEY));
-    if(saved){
-      const rawMatrices=Array.isArray(saved.matrices)&&saved.matrices.length?saved.matrices:[saved];
-      const matrices=rawMatrices.map((m,i)=>matrixFromState(m,m.id||'table-'+(i+1),m.name||'Tabela '+(i+1))).filter(m=>m.employees.length&&m.operations.length);
-      if(matrices.length){const activeId=matrices.some(m=>m.id===saved.activeMatrixId)?saved.activeMatrixId:matrices[0].id;const first=matrices.find(m=>m.id===activeId)||matrices[0];return {matrices,activeMatrixId:first.id,employees:first.employees,operations:first.operations,skills:first.skills,linePlans:first.linePlans,activeLineId:first.activeLineId};}
-    }
-  }catch(error){console.warn('Estado salvo inválido; usando dados padrão.',error);}
+  const restored=readStoredState(KEY)||readStoredState(BACKUP_KEY);
+  if(restored)return restored;
   return createDefaultState();
 }
 function save(){
-  try{syncCurrentMatrix();localStorage.setItem(KEY,JSON.stringify(state));return true;}catch(error){console.error('Falha ao persistir o estado:',error);flash('Não foi possível salvar as alterações neste navegador');return false;}
+  try{syncCurrentMatrix();const serialized=JSON.stringify(state);localStorage.setItem(BACKUP_KEY,serialized);localStorage.setItem(KEY,serialized);return true;}catch(error){console.error('Falha ao persistir o estado:',error);flash('Não foi possível salvar as alterações neste navegador');return false;}
 }
 function activePlan(){ return state.linePlans.find(l=>l.id===state.activeLineId) || state.linePlans[0]; }
 function escapeHtml(s){ return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
