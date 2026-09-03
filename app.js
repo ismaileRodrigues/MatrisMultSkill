@@ -26,7 +26,9 @@ function load(){
   operations.forEach(o=>{const emp=employees.find(e=>e.name===titularMap[o.code]);if(emp)skills[emp.id+'|'+o.id]='titular'});
   const first={employees,operations,skills,linePlans:[blankPlan('line-1','Linha 1')],activeLineId:'line-1'};return {...matrixFromState(first,'table-1','Tabela 1'),matrices:[matrixFromState(first,'table-1','Tabela 1')],activeMatrixId:'table-1'};
 }
-function save(){ syncCurrentMatrix(); localStorage.setItem(KEY, JSON.stringify(state)); }
+function save(){
+  try{syncCurrentMatrix();localStorage.setItem(KEY,JSON.stringify(state));return true;}catch(error){console.error('Falha ao persistir o estado:',error);flash('Não foi possível salvar as alterações neste navegador');return false;}
+}
 function activePlan(){ return state.linePlans.find(l=>l.id===state.activeLineId) || state.linePlans[0]; }
 function escapeHtml(s){ return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 function levelInfo(v){ return levels.find(x=>x[0]===v)||levels[5]; }
@@ -37,11 +39,18 @@ function coverageOperation(id){ return state.employees.filter(e=>isApto(skill(e.
 function today(){ return new Date().toISOString().slice(0,10); }
 function currentWeekday(){const day=new Date().getDay();return ['domingo','segunda','terca','quarta','quinta','sexta','sabado'][day];}
 function scheduledOperationFor(empId,day=currentWeekday()){return activePlan().weeklySchedules?.[empId]?.[day]||'';}
-function assignmentsForToday(plan){
+function assignmentsForDay(plan,day){
   const result={};const usedEmployees=new Set();const usedOperations=new Set();
-  state.employees.forEach(emp=>{const opId=plan.weeklySchedules?.[emp.id]?.[currentWeekday()];if(!opId||usedEmployees.has(emp.id))return;const op=state.operations.find(o=>o.id===opId);if(op&&isApto(skill(emp.id,op.id))&&!usedOperations.has(op.id)){result[op.id]=emp.id;usedEmployees.add(emp.id);usedOperations.add(op.id);}});
+  state.employees.forEach(emp=>{const opId=plan.weeklySchedules?.[emp.id]?.[day];if(!opId||usedEmployees.has(emp.id))return;const op=state.operations.find(o=>o.id===opId);if(op&&isApto(skill(emp.id,op.id))&&!usedOperations.has(op.id)){result[op.id]=emp.id;usedEmployees.add(emp.id);usedOperations.add(op.id);}});
   Object.entries(plan.assignments||{}).forEach(([opId,empId])=>{if(usedOperations.has(opId)||usedEmployees.has(empId))return;const op=state.operations.find(o=>o.id===opId);const emp=state.employees.find(e=>e.id===empId);if(op&&emp&&isApto(skill(emp.id,op.id))){result[opId]=empId;usedOperations.add(opId);usedEmployees.add(empId);}});
   return result;
+}
+function assignmentsForToday(plan){return assignmentsForDay(plan,currentWeekday());}
+function weeklyValidation(plan,empId,day,opId){
+  if(opId){const conflict=state.employees.find(emp=>emp.id!==empId&&plan.weeklySchedules?.[emp.id]?.[day]===opId);if(conflict)return `O step já está programado para ${conflict.name} na ${WEEKDAYS.find(([key])=>key===day)?.[1]||day}.`;
+    const employeeConflict=plan.weeklySchedules?.[empId]?.[day]&&plan.weeklySchedules[empId][day]!==opId; if(employeeConflict)return 'Este funcionário já possui outro step programado para o mesmo dia.';}
+  const before=assignmentsForDay(plan,day);const candidate=JSON.parse(JSON.stringify(plan));candidate.weeklySchedules=candidate.weeklySchedules||{};candidate.weeklySchedules[empId]=candidate.weeklySchedules[empId]||{};if(opId)candidate.weeklySchedules[empId][day]=opId;else delete candidate.weeklySchedules[empId][day];const after=assignmentsForDay(candidate,day);
+  if(Object.keys(before).length===state.operations.length&&Object.keys(after).length<state.operations.length){const missing=state.operations.filter(op=>!after[op.id]).map(op=>op.code).join(', ');return `A alteração deixaria step(s) sem operador: ${missing}.`;}return '';
 }
 
 function renderMatrixSelector(){const el=document.querySelector('#matrixSelect');if(el)el.innerHTML=state.matrices.map(m=>`<option value="${m.id}" ${m.id===state.activeMatrixId?'selected':''}>${escapeHtml(m.name)}</option>`).join('');}
@@ -70,10 +79,10 @@ function renderRouteEditor(){
 }
 function eligibleOperations(empId){return state.operations.filter(o=>isApto(skill(empId,o.id)));}
 function routeFor(empId){const eligible=eligibleOperations(empId).map(o=>o.id);const schedule=activePlan().weeklySchedules?.[empId]||{};const weekly=WEEKDAYS.map(([key])=>schedule[key]).filter(id=>eligible.includes(id));const saved=activePlan().rotationRoutes?.[empId];const legacy=Array.isArray(saved)?saved.filter(id=>eligible.includes(id)):[];return [...new Set([...(weekly.length?weekly:legacy),...eligible])];}
-function saveWeeklySchedule(empId,day,opId){const plan=activePlan();plan.weeklySchedules=plan.weeklySchedules||{};plan.weeklySchedules[empId]=plan.weeklySchedules[empId]||{};const eligible=eligibleOperations(empId).some(o=>o.id===opId);if(opId&&eligible)plan.weeklySchedules[empId][day]=opId;else delete plan.weeklySchedules[empId][day];save();renderLineBoard();flash('Programação semanal salva');}
+function saveWeeklySchedule(empId,day,opId){const plan=activePlan();const eligible=eligibleOperations(empId).some(o=>o.id===opId);if(opId&&!eligible){flash('Ação bloqueada: o funcionário não é apto para este step');return;}const error=weeklyValidation(plan,empId,day,opId);if(error){flash('Ação bloqueada: '+error);return;}plan.weeklySchedules=plan.weeklySchedules||{};plan.weeklySchedules[empId]=plan.weeklySchedules[empId]||{};if(opId)plan.weeklySchedules[empId][day]=opId;else delete plan.weeklySchedules[empId][day];if(!save())return;renderLineBoard();flash('Programação semanal salva');}
 function bindWeeklyScheduleEvents(){document.querySelectorAll('[data-weekly-employee]').forEach(select=>select.onchange=()=>saveWeeklySchedule(select.dataset.weeklyEmployee,select.dataset.weeklyDay,select.value));document.querySelectorAll('[data-weekly-reset]').forEach(button=>button.onclick=()=>{delete activePlan().weeklySchedules[button.dataset.weeklyReset];save();renderLineBoard();flash('Programação semanal limpa');});}
 function openAssignModal(opId){modalMode='assign';modalId=opId;document.querySelector('#modalTitle').textContent='Alocar montador';document.querySelector('#modalLabel').textContent='Selecione o funcionário';const op=state.operations.find(o=>o.id===opId);const plan=activePlan();const eligible=state.employees.filter(e=>isApto(skill(e.id,opId))&&!Object.entries(plan.assignments).some(([id,emp])=>id!==opId&&emp===e.id));const options=eligible.map(e=>{const info=levelInfo(skill(e.id,opId));return `<option value="${e.id}">${escapeHtml(e.name)} (${info[1]})</option>`}).join('')||'<option value="">Nenhum montador apto ou disponível</option>';document.querySelector('#modalInput').outerHTML=`<select id="modalInput" class="modal-select"><option value="">Selecione...</option>${options}</select>`;document.querySelector('#modalBackdrop').classList.remove('hidden');}
-function assign(opId,empId){const plan=activePlan();if(empId&&!isApto(skill(empId,opId))){flash('Somente Titular ou Nível 3 pode ser distribuído');return;}Object.keys(plan.assignments).forEach(id=>{if(id!==opId&&plan.assignments[id]===empId)delete plan.assignments[id]});if(empId)plan.assignments[opId]=empId;else delete plan.assignments[opId];save();render();flash(empId?'Montador alocado':'Alocação removida');}
+function assign(opId,empId){const plan=activePlan();const day=currentWeekday();if(empId&&!isApto(skill(empId,opId))){flash('Ação bloqueada: somente Titular ou Nível 3 pode ser distribuído');return;}if(empId){const scheduled=plan.weeklySchedules?.[empId]?.[day];if(scheduled&&scheduled!==opId){flash('Ação bloqueada: este funcionário já está programado para outro step hoje');return;}const conflict=state.employees.find(emp=>emp.id!==empId&&plan.weeklySchedules?.[emp.id]?.[day]===opId);if(conflict){flash(`Ação bloqueada: ${opId} já está programado para ${conflict.name} hoje`);return;}}Object.keys(plan.assignments).forEach(id=>{if(id!==opId&&plan.assignments[id]===empId)delete plan.assignments[id]});if(empId)plan.assignments[opId]=empId;else delete plan.assignments[opId];if(!save())return;render();flash(empId?'Montador alocado':'Alocação removida');}
 function rotateAssignments(){
   const plan=activePlan();
   const current=plan.assignments||{};
