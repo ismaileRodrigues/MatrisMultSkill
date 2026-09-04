@@ -28,5 +28,10 @@
   </div>
   <div class="modal-backdrop hidden" id="modalBackdrop"><div class="modal"><button class="modal-close" id="closeModal">×</button><p class="eyebrow">CADASTRO</p><h2 id="modalTitle">Adicionar</h2><label id="modalLabel">Nome</label><input id="modalInput" autocomplete="off"><div class="modal-actions"><button class="btn secondary" id="cancelModal">Cancelar</button><button class="btn primary" id="saveModal">Salvar</button></div></div></div>
   <script src="app.js"></script>
+  <script>
+    setTimeout(function(){
+      if(typeof window.render==='function') window.render();
+    },0);
+  </script>
 </body>
 </html>
